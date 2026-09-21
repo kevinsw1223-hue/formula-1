@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apex F1: 그랑프리 레이싱 (Apex F1 Grand Prix)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts for F1 Digital Telemetry -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            font-family: 'Noto Sans KR', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .font-orbitron {
+            font-family: 'Orbitron', monospace;
+        }
+
+        /* Glassmorphism UI Style */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        .glass-btn {
+            background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-btn:hover {
+            background: linear-gradient(135deg, rgba(239,68,68,0.4) 0%, rgba(220,38,38,0.2) 100%);
+            border-color: rgba(239, 68, 68, 0.6);
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+        }
+        .glass-btn:active {
+            transform: translateY(1px);
+        }
+
+        /* F1 Red & Carbon Glows */
+        .glow-red {
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.5);
+        }
+        .glow-green {
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
+        }
+        .glow-cyan {
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.5);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.4);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ef4444;
+            border-radius: 3px;
+        }
+
+        /* Shift Light Bar Animation */
+        .shift-light {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #334155;
+            transition: background 0.05s ease;
+        }
+        .shift-light.active-green { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+        .shift-light.active-red { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+        .shift-light.active-blue { background: #3b82f6; box-shadow: 0 0 12px #3b82f6; }
+    </style>
+</head>
+<body class="bg-slate-950 text-white min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <!-- TOP NAVBAR & TELEMETRY HEADER -->
+    <header class="w-full bg-slate-900/90 border-b border-red-600/40 sticky top-0 z-40 backdrop-blur-md px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-3">
+            
+            <!-- Logo & Active Team Info -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-red-700 to-red-500 flex items-center justify-center font-black text-white text-xl shadow-lg border border-red-400">
+                    <i class="fa-solid fa-flag-checkered"></i>
+                </div>
+                <div>
+                    <h1 class="font-black text-lg md:text-xl text-red-500 font-orbitron tracking-wider flex items-center gap-2">
+                        APEX F1 <span class="text-xs bg-red-950 text-red-400 border border-red-600/50 px-2 py-0.5 rounded-full font-sans font-bold">2026 GP</span>
+                    </h1>
+                    <p class="text-xs text-slate-400 flex items-center gap-2">
+                        <span id="header-team-name" class="text-slate-200 font-bold"><i class="fa-solid fa-car text-red-500"></i> Red Racing F1</span> &bull; 
+                        <span id="header-trophies" class="text-amber-400 font-bold"><i class="fa-solid fa-trophy"></i> 0 Pts</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Global Stats & Audio Toggle -->
+            <div class="flex items-center gap-3 md:gap-5 text-xs font-semibold">
+                
+                <!-- Credits / Money -->
+                <div class="glass-panel px-3 py-1.5 rounded-xl border border-amber-500/30 flex items-center gap-2">
+                    <i class="fa-solid fa-sack-dollar text-amber-400 text-base"></i>
+                    <div>
+                        <div class="text-[9px] text-slate-400">시즌 상금</div>
+                        <span id="credits-display" class="font-orbitron font-extrabold text-amber-300 text-sm">$ 150,000</span>
+                    </div>
+                </div>
+
+                <!-- Best Lap Record -->
+                <div class="glass-panel px-3 py-1.5 rounded-xl border border-cyan-500/30 flex items-center gap-2">
+                    <i class="fa-solid fa-stopwatch text-cyan-400 text-base"></i>
+                    <div>
+                        <div class="text-[9px] text-slate-400">최고 랩타임</div>
+                        <span id="best-lap-display" class="font-orbitron font-extrabold text-cyan-300 text-sm">--:--.---</span>
+                    </div>
+                </div>
+
+                <!-- Sound Engine Button -->
+                <button onclick="toggleAudio()" class="glass-btn p-2.5 rounded-xl text-red-400 hover:text-white" title="엔진 및 효과음 ON/OFF">
+                    <i id="sound-icon" class="fa-solid fa-volume-high text-base"></i>
+                </button>
+
+            </div>
+
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center">
+
+        <!-- VIEW 1: MAIN GARAGE & TRACK SELECTOR -->
+        <section id="view-garage" class="flex flex-col gap-6">
+            
+            <!-- Hero Banner -->
+            <div class="glass-panel p-6 md:p-8 rounded-3xl border border-red-500/30 bg-gradient-to-r from-slate-900 via-slate-900/90 to-red-950/40 relative overflow-hidden">
+                <div class="max-w-2xl z-10 relative">
+                    <span class="px-3 py-1 bg-red-500/20 text-red-400 text-xs font-bold rounded-full border border-red-500/40 font-orbitron">
+                        🏎️ FORMULA 1 WORLD CHAMPIONSHIP
+                    </span>
+                    <h2 class="text-3xl md:text-5xl font-black mt-3 text-white font-orbitron tracking-tight">
+                        FULL THROTTLE <span class="text-red-500">RACING</span>
+                    </h2>
+                    <p class="text-sm text-slate-300 mt-2 leading-relaxed">
+                        초고속 코너링, ERS 부스터, DRS 시스템, 피트스톱 타이어 전략을 구사하여 세계 유수의 그랑프리 서킷에서 우승 챔피언 트로피를 차지하세요.
+                    </p>
+
+                    <div class="flex flex-wrap items-center gap-4 mt-6">
+                        <button onclick="startGrandPrix()" class="px-8 py-3.5 rounded-2xl font-extrabold text-base bg-gradient-to-r from-red-600 via-red-500 to-amber-500 text-white shadow-xl hover:brightness-125 transition-all transform hover:scale-105 flex items-center gap-3 glow-red">
+                            <i class="fa-solid fa-play text-lg"></i> 그랑프리 레이스 시작
+                        </button>
+                        <button onclick="startPracticeMode()" class="glass-btn px-6 py-3.5 rounded-2xl font-bold text-sm text-slate-200 flex items-center gap-2">
+                            <i class="fa-solid fa-stopwatch text-cyan-400"></i> 타임 트라이얼 (연습)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Track & Car Selection Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                
+                <!-- Track 1: Monaco Circuit -->
+                <div onclick="selectTrack(0)" id="track-card-0" class="glass-panel p-5 rounded-2xl border-2 border-red-500 cursor-pointer transition-all hover:scale-[102%] group relative">
+                    <div class="h-36 bg-slate-950/80 rounded-xl mb-4 p-3 border border-slate-800 flex items-center justify-center relative overflow-hidden">
+                        <!-- Canvas Thumbnail for Circuit 1 -->
+                        <div class="text-4xl text-red-500"><i class="fa-solid fa-route"></i></div>
+                        <span class="absolute top-2 left-2 px-2 py-0.5 bg-red-600 text-white font-orbitron text-[10px] font-bold rounded">TECHNICAL</span>
+                    </div>
+                    <h3 class="font-bold text-lg text-white font-orbitron">모나코 서킷 (Monaco)</h3>
+                    <p class="text-xs text-slate-400 mt-1">좁은 시가지 도로와 정교한 헤어핀 코너 중심의 고난도 서킷</p>
+                    <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center text-xs">
+                        <span class="text-slate-400">전장: <strong class="text-white">3.337 km</strong></span>
+                        <span class="text-red-400 font-bold font-orbitron">3 Laps</span>
+                    </div>
+                </div>
+
+                <!-- Track 2: Silverstone Circuit -->
+                <div onclick="selectTrack(1)" id="track-card-1" class="glass-panel p-5 rounded-2xl border border-slate-700 hover:border-red-500/70 cursor-pointer transition-all hover:scale-[102%] group relative">
+                    <div class="h-36 bg-slate-950/80 rounded-xl mb-4 p-3 border border-slate-800 flex items-center justify-center relative overflow-hidden">
+                        <div class="text-4xl text-cyan-400"><i class="fa-solid fa-bolt"></i></div>
+                        <span class="absolute top-2 left-2 px-2 py-0.5 bg-cyan-600 text-white font-orbitron text-[10px] font-bold rounded">HIGH SPEED</span>
+                    </div>
+                    <h3 class="font-bold text-lg text-white font-orbitron">실버스톤 서킷 (Silverstone)</h3>
+                    <p class="text-xs text-slate-400 mt-1">고속 코너와 드라이브 오버테이크 구간이 배치된 스피드 서킷</p>
+                    <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center text-xs">
+                        <span class="text-slate-400">전장: <strong class="text-white">5.891 km</strong></span>
+                        <span class="text-cyan-400 font-bold font-orbitron">3 Laps</span>
+                    </div>
+                </div>
+
+                <!-- Team & Car Upgrade Garage -->
+                <div class="glass-panel p-5 rounded-2xl border border-slate-700 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-bold text-base text-amber-400 font-orbitron"><i class="fa-solid fa-wrench"></i> F1 머신 튜닝 & 업그레이드</h3>
+                        </div>
+
+                        <div class="space-y-3 text-xs">
+                            <!-- Engine Upgrade -->
+                            <div class="flex justify-between items-center p-2.5 bg-slate-900/80 rounded-xl border border-slate-800">
+                                <div>
+                                    <div class="font-bold text-slate-200">엔진 최고속도 (Top Speed)</div>
+                                    <div class="text-[10px] text-slate-400" id="stat-speed-lvl">Lv. 1 (+0 km/h)</div>
+                                </div>
+                                <button onclick="upgradeStat('speed', 30000)" class="glass-btn px-3 py-1.5 rounded-lg text-amber-400 hover:text-white font-bold">
+                                    $ 30,000
+                                </button>
+                            </div>
+
+                            <!-- Aerodynamics Upgrade -->
+                            <div class="flex justify-between items-center p-2.5 bg-slate-900/80 rounded-xl border border-slate-800">
+                                <div>
+                                    <div class="font-bold text-slate-200">다운포스 코너링 (Handling)</div>
+                                    <div class="text-[10px] text-slate-400" id="stat-handling-lvl">Lv. 1 (+0 Grip)</div>
+                                </div>
+                                <button onclick="upgradeStat('handling', 25000)" class="glass-btn px-3 py-1.5 rounded-lg text-amber-400 hover:text-white font-bold">
+                                    $ 25,000
+                                </button>
+                            </div>
+
+                            <!-- ERS Boost Capacity -->
+                            <div class="flex justify-between items-center p-2.5 bg-slate-900/80 rounded-xl border border-slate-800">
+                                <div>
+                                    <div class="font-bold text-slate-200">ERS 부스트 배터리 (ERS Energy)</div>
+                                    <div class="text-[10px] text-slate-400" id="stat-ers-lvl">Lv. 1 (+0% Capacity)</div>
+                                </div>
+                                <button onclick="upgradeStat('ers', 20000)" class="glass-btn px-3 py-1.5 rounded-lg text-amber-400 hover:text-white font-bold">
+                                    $ 20,000
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-[11px] text-slate-400 bg-slate-900/50 p-2 rounded-xl border border-slate-800 text-center mt-3">
+                        💡 서킷을 달리고 받은 상금으로 머신 성능을 끌어올리세요!
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- VIEW 2: RACE VIEWPORT & TELEMETRY CANVAS -->
+        <section id="view-race" class="hidden flex flex-col gap-4">
+            
+            <!-- Telemetry Top Bar -->
+            <div class="glass-panel p-3.5 rounded-2xl border border-slate-700 flex flex-wrap justify-between items-center gap-3">
+                <div class="flex items-center gap-4">
+                    <span id="race-pos-badge" class="px-4 py-1.5 rounded-xl font-orbitron font-black text-lg bg-red-600 text-white shadow-lg glow-red">
+                        P 1 / 10
+                    </span>
+                    <div>
+                        <div class="text-[10px] text-slate-400">현재 서킷 / 세션</div>
+                        <div id="race-circuit-title" class="font-orbitron font-bold text-sm text-yellow-400">MONACO GRAND PRIX</div>
+                    </div>
+                </div>
+
+                <!-- Lap Progress & Sector Timer -->
+                <div class="flex items-center gap-6 font-orbitron">
+                    <div class="text-center">
+                        <div class="text-[10px] text-slate-400">LAP</div>
+                        <div id="lap-counter-text" class="text-xl font-black text-white">1 <span class="text-xs text-slate-500">/ 3</span></div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-[10px] text-slate-400">CURRENT LAP TIME</div>
+                        <div id="current-lap-timer" class="text-xl font-black text-emerald-400">00:00.000</div>
+                    </div>
+                    <div class="text-center hidden md:block">
+                        <div class="text-[10px] text-slate-400">LAST LAP</div>
+                        <div id="last-lap-timer" class="text-sm font-bold text-slate-300">--:--.---</div>
+                    </div>
+                </div>
+
+                <button onclick="confirmExitRace()" class="glass-btn px-4 py-2 rounded-xl text-xs font-bold text-rose-400 hover:text-white">
+                    <i class="fa-solid fa-flag-checkered mr-1"></i> 피트 복귀
+                </button>
+            </div>
+
+            <!-- Race Canvas Container with HUD overlay -->
+            <div class="relative w-full aspect-[16/9] max-h-[640px] bg-slate-950 rounded-3xl overflow-hidden border-2 border-red-600/50 shadow-2xl">
+                
+                <canvas id="race-canvas" class="w-full h-full block cursor-crosshair"></canvas>
+
+                <!-- REAL F1 STEERING WHEEL TELEMETRY OVERLAY -->
+                <div class="absolute bottom-4 left-4 right-4 pointer-events-none flex justify-between items-end gap-3">
+                    
+                    <!-- Left Cornering & Tire Wear Monitor -->
+                    <div class="glass-panel p-3 rounded-2xl backdrop-blur-md border border-slate-700/80 text-xs w-44 md:w-52">
+                        <div class="font-orbitron font-bold text-slate-300 mb-1 flex justify-between">
+                            <span><i class="fa-solid fa-circle-notch text-red-500"></i> TIRE WEAR</span>
+                            <span id="tire-wear-percent" class="text-emerald-400">100%</span>
+                        </div>
+                        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mb-2">
+                            <div id="tire-wear-bar" class="bg-emerald-500 h-full w-full transition-all"></div>
+                        </div>
+
+                        <!-- Compound Indicator -->
+                        <div class="flex justify-between items-center text-[11px] text-slate-400">
+                            <span>Compound: <strong id="tire-compound-text" class="text-red-400 font-orbitron">SOFT (S)</strong></span>
+                            <button onclick="requestPitStop()" class="pointer-events-auto text-[10px] bg-red-600 hover:bg-red-500 text-white px-2 py-0.5 rounded font-bold">
+                                PIT IN
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Center Shift Light RPM & Speedometer Steering Center -->
+                    <div class="glass-panel p-4 rounded-3xl backdrop-blur-lg border border-red-500/40 text-center flex flex-col items-center shadow-2xl min-w-[240px] md:min-w-[280px]">
+                        <!-- Shift RPM Lights -->
+                        <div class="flex gap-1.5 mb-2" id="shift-lights-container">
+                            <div class="shift-light"></div>
+                            <div class="shift-light"></div>
+                            <div class="shift-light"></div>
+                            <div class="shift-light"></div>
+                            <div class="shift-light"></div>
+                            <div class="shift-light"></div>
+                            <div class="shift-light"></div>
+                            <div class="shift-light"></div>
+                        </div>
+
+                        <div class="flex items-baseline gap-2 font-orbitron">
+                            <span id="speed-display" class="text-4xl md:text-5xl font-black text-white tracking-wider">0</span>
+                            <span class="text-xs font-bold text-red-500">KM/H</span>
+                        </div>
+
+                        <div class="flex items-center gap-4 text-xs font-orbitron mt-1">
+                            <span class="text-slate-400">GEAR: <strong id="gear-display" class="text-yellow-400 text-base font-black">N</strong></span>
+                            <span class="text-slate-400">RPM: <strong id="rpm-display" class="text-slate-200">1,000</strong></span>
+                        </div>
+
+                        <!-- ERS Boost & DRS Status Bar -->
+                        <div class="w-full mt-2 space-y-1">
+                            <div class="flex justify-between text-[10px] font-orbitron text-slate-300">
+                                <span>ERS BOOST (SPACE)</span>
+                                <span id="ers-percent-text" class="text-cyan-400">100%</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                <div id="ers-bar" class="bg-cyan-400 h-full w-full transition-all"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Controls / DRS Indicator -->
+                    <div class="glass-panel p-3 rounded-2xl backdrop-blur-md border border-slate-700/80 text-xs w-44 md:w-52 text-right">
+                        <div class="font-orbitron font-bold text-slate-300 mb-1 flex justify-between">
+                            <span>DRS WING</span>
+                            <span id="drs-status-badge" class="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-500 font-bold">DISABLED</span>
+                        </div>
+
+                        <div class="text-[11px] text-slate-400 mt-2 space-y-0.5">
+                            <div>• 가속: <strong class="text-slate-200">↑ / W</strong></div>
+                            <div>• 감속: <strong class="text-slate-200">↓ / S</strong></div>
+                            <div>• 조향: <strong class="text-slate-200">← → / A D</strong></div>
+                            <div>• ERS 부스트: <strong class="text-cyan-300">Space</strong></div>
+                        </div>
+                        <div class="mt-2 pt-2 border-t border-slate-800 flex justify-between items-center">
+                            <span class="text-[10px] text-slate-400">조작 보조 (Assist)</span>
+                            <button onclick="toggleSteeringAssist()" id="assist-toggle-btn" class="px-2 py-0.5 rounded text-[10px] bg-emerald-600 text-white font-bold">
+                                ON (쉬움)
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- On-Screen Touch Controls for Mobile Devices (Enlarged & Smoother) -->
+                <div class="absolute top-4 left-4 pointer-events-auto flex gap-3 md:hidden">
+                    <button id="btn-touch-left" class="glass-btn w-14 h-14 rounded-2xl bg-slate-800/80 text-white text-2xl flex items-center justify-center active:bg-red-600">◀</button>
+                    <button id="btn-touch-right" class="glass-btn w-14 h-14 rounded-2xl bg-slate-800/80 text-white text-2xl flex items-center justify-center active:bg-red-600">▶</button>
+                </div>
+                <div class="absolute top-4 right-4 pointer-events-auto flex gap-3 md:hidden">
+                    <button id="btn-touch-accel" class="glass-btn w-16 h-16 rounded-2xl bg-emerald-600/80 text-white font-black text-sm active:bg-emerald-500">GAS</button>
+                    <button id="btn-touch-brake" class="glass-btn w-16 h-16 rounded-2xl bg-red-600/80 text-white font-black text-sm active:bg-red-500">BRAKE</button>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- PIT STOP STRATEGY MODAL -->
+    <div id="pitstop-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel p-6 md:p-8 rounded-3xl max-w-lg w-full border border-red-500/50 text-center flex flex-col items-center gap-5">
+            <div class="w-16 h-16 rounded-full bg-red-600/30 border border-red-500 flex items-center justify-center text-red-500 text-3xl">
+                <i class="fa-solid fa-screwdriver-wrench"></i>
+            </div>
+            <h2 class="text-2xl font-black text-white font-orbitron">PIT STOP CREW READY!</h2>
+            <p class="text-xs text-slate-300">교체할 타이어 컴파운드를 선택하세요. 각 타이어는 마모율과 내구성이 다릅니다.</p>
+
+            <div class="grid grid-cols-3 gap-3 w-full">
+                <!-- Soft Compound -->
+                <button onclick="executePitStop('SOFT')" class="glass-panel p-3 rounded-2xl border border-red-500/50 hover:bg-red-950/40 text-center">
+                    <div class="text-xl font-orbitron font-extrabold text-red-500">SOFT</div>
+                    <p class="text-[10px] text-slate-400 mt-1">최고의 그립 / 빠른 마모</p>
+                </button>
+                <!-- Medium Compound -->
+                <button onclick="executePitStop('MEDIUM')" class="glass-panel p-3 rounded-2xl border border-amber-500/50 hover:bg-amber-950/40 text-center">
+                    <div class="text-xl font-orbitron font-extrabold text-amber-400">MEDIUM</div>
+                    <p class="text-[10px] text-slate-400 mt-1">균형 잡힌 성능</p>
+                </button>
+                <!-- Hard Compound -->
+                <button onclick="executePitStop('HARD')" class="glass-panel p-3 rounded-2xl border border-slate-400/50 hover:bg-slate-800 text-center">
+                    <div class="text-xl font-orbitron font-extrabold text-slate-200">HARD</div>
+                    <p class="text-[10px] text-slate-400 mt-1">오래 지속되는 내구성</p>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RACE RESULT PODIUM MODAL -->
+    <div id="result-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-lg hidden flex items-center justify-center p-4">
+        <div class="glass-panel p-6 md:p-8 rounded-3xl max-w-md w-full border border-amber-500/50 text-center flex flex-col items-center gap-4">
+            <div id="podium-icon" class="text-6xl animate-bounce">🏆</div>
+            <h2 id="result-title" class="text-2xl font-black text-amber-400 font-orbitron">VICTORY! P1 FINISH</h2>
+            <p id="result-desc" class="text-xs text-slate-300 leading-relaxed">
+                압도적인 경기력으로 모나코 그랑프리 정상에 올랐습니다!
+            </p>
+
+            <div class="glass-panel p-4 rounded-2xl w-full text-left text-xs space-y-2 border border-slate-700 font-orbitron">
+                <div class="flex justify-between"><span>최종 순위:</span> <span id="res-pos" class="text-amber-400 font-bold">P1 / 10</span></div>
+                <div class="flex justify-between"><span>최고 랩타임:</span> <span id="res-best-lap" class="text-cyan-400 font-bold">01:12.340</span></div>
+                <div class="flex justify-between"><span>획득 상금:</span> <span id="res-prize" class="text-emerald-400 font-bold">$ 80,000</span></div>
+                <div class="flex justify-between"><span>챔피언십 포인트:</span> <span id="res-points" class="text-amber-300 font-bold">+25 Pts</span></div>
+            </div>
+
+            <button onclick="closeResultModal()" class="w-full py-3.5 rounded-2xl font-black text-sm bg-gradient-to-r from-red-600 via-amber-500 to-yellow-500 text-slate-950 shadow-xl hover:brightness-110 glow-red">
+                차고로 돌아가기 (Return to Garage)
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // GLOBAL F1 GAME STATE ENGINE
+        const gameState = {
+            soundEnabled: true,
+            steeringAssist: true, // Easy Handling Stability Assist
+            credits: 150000,
+            trophyPoints: 0,
+            bestLap: null,
+            selectedTrackIndex: 0,
+            mode: 'garage', // 'garage', 'race', 'practice'
+            upgrades: {
+                speedLvl: 1,
+                handlingLvl: 1,
+                ersLvl: 1
+            }
+        };
+
+        // TRACK DEFINITIONS
+        const tracks = [
+            {
+                name: "MONACO GRAND PRIX",
+                laps: 3,
+                lengthKm: "3.337 km",
+                // Closed Loop Waypoints (X, Y)
+                waypoints: [
+                    {x: 200, y: 550}, {x: 400, y: 550}, {x: 600, y: 500},
+                    {x: 750, y: 400}, {x: 780, y: 250}, {x: 700, y: 150},
+                    {x: 500, y: 120}, {x: 350, y: 200}, {x: 250, y: 150},
+                    {x: 120, y: 250}, {x: 100, y: 400}
+                ],
+                trackWidth: 65,
+                drsZoneIndex: 1
+            },
+            {
+                name: "SILVERSTONE CIRCUIT",
+                laps: 3,
+                lengthKm: "5.891 km",
+                waypoints: [
+                    {x: 180, y: 520}, {x: 450, y: 520}, {x: 720, y: 480},
+                    {x: 820, y: 320}, {x: 650, y: 180}, {x: 450, y: 250},
+                    {x: 300, y: 120}, {x: 120, y: 200}, {x: 100, y: 380}
+                ],
+                trackWidth: 75,
+                drsZoneIndex: 0
+            }
+        ];
+
+        // PLAYER F1 CAR PHYSICS OBJECT
+        let playerCar = {
+            x: 0, y: 0,
+            angle: 0,
+            speed: 0,
+            maxSpeed: 280, // km/h
+            acceleration: 0.22, // Slightly increased initial acceleration
+            handling: 0.068,    // Increased base handling (was 0.045) for much easier turning
+            gear: 1,
+            rpm: 1000,
+            ersEnergy: 100,
+            isERSActive: false,
+            drsAvailable: false,
+            drsActive: false,
+            tireWear: 100, // 0 - 100%
+            tireCompound: 'SOFT',
+            currentLap: 1,
+            lapStartTime: 0,
+            lapTimes: [],
+            checkpointIndex: 0,
+            totalDistance: 0
+        };
+
+        // AI DRIVERS ARRAY
+        let aiCars = [];
+        const AI_NAMES = ["Verstappen", "Hamilton", "Leclerc", "Norris", "Sainz", "Piastri", "Russell", "Alonso", "Gasly"];
+        const AI_COLORS = ['#3b82f6', '#06b6d4', '#dc2626', '#f97316', '#eab308', '#a855f7', '#ec4899', '#10b981', '#64748b'];
+
+        // RACE CONTROL VARIABLES
+        let canvas, ctx;
+        let animationFrameId = null;
+        let keys = {};
+        let raceStartTime = 0;
+        let isRaceActive = false;
+        let pitStopPending = false;
+
+        // WEB AUDIO SYNTHESIZER FOR F1 ENGINE SOUNDS
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+        let engineOsc = null;
+        let engineGain = null;
+
+        function initAudioEngine() {
+            if (!audioCtx) {
+                audioCtx = new AudioCtx();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            if (!engineOsc && gameState.soundEnabled) {
+                engineOsc = audioCtx.createOscillator();
+                engineGain = audioCtx.createGain();
+                engineOsc.type = 'sawtooth';
+                engineOsc.frequency.setValueAtTime(80, audioCtx.currentTime);
+                engineGain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                engineOsc.connect(engineGain);
+                engineGain.connect(audioCtx.destination);
+                engineOsc.start();
+            }
+        }
+
+        function updateEngineSound(rpm, gear) {
+            if (!audioCtx || !engineOsc || !gameState.soundEnabled) return;
+            const targetFreq = 60 + (rpm / 14000) * 320 + (gear * 20);
+            engineOsc.frequency.setTargetAtTime(targetFreq, audioCtx.currentTime, 0.05);
+        }
+
+        function playSoundEffect(type) {
+            if (!gameState.soundEnabled) return;
+            try {
+                if (!audioCtx) audioCtx = new AudioCtx();
+                const now = audioCtx.currentTime;
+                
+                if (type === 'squeal') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(800 + Math.random()*200, now);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'cheer') {
+                    // Win sound synth chord
+                    const notes = [440, 554.37, 659.25, 880];
+                    notes.forEach(f => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.frequency.setValueAtTime(f, now);
+                        g.gain.setValueAtTime(0.1, now);
+                        g.gain.linearRampToValueAtTime(0.001, now + 1.2);
+                        o.connect(g);
+                        g.connect(audioCtx.destination);
+                        o.start(now);
+                        o.stop(now + 1.2);
+                    });
+                }
+            } catch(e){}
+        }
+
+        function toggleAudio() {
+            gameState.soundEnabled = !gameState.soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            icon.className = gameState.soundEnabled ? "fa-solid fa-volume-high text-base" : "fa-solid fa-volume-xmark text-slate-500 text-base";
+            if (!gameState.soundEnabled && engineGain) {
+                engineGain.gain.setValueAtTime(0, audioCtx.currentTime);
+            }
+        }
+
+        function selectTrack(index) {
+            gameState.selectedTrackIndex = index;
+            document.getElementById('track-card-0').className = index === 0 ? "glass-panel p-5 rounded-2xl border-2 border-red-500 cursor-pointer transition-all hover:scale-[102%] group relative" : "glass-panel p-5 rounded-2xl border border-slate-700 hover:border-red-500/70 cursor-pointer transition-all hover:scale-[102%] group relative";
+            document.getElementById('track-card-1').className = index === 1 ? "glass-panel p-5 rounded-2xl border-2 border-red-500 cursor-pointer transition-all hover:scale-[102%] group relative" : "glass-panel p-5 rounded-2xl border border-slate-700 hover:border-red-500/70 cursor-pointer transition-all hover:scale-[102%] group relative";
+        }
+
+        function upgradeStat(type, cost) {
+            if (gameState.credits < cost) {
+                showToast("❌ 시즌 상금이 부족합니다!");
+                return;
+            }
+            gameState.credits -= cost;
+            if (type === 'speed') {
+                gameState.upgrades.speedLvl++;
+                document.getElementById('stat-speed-lvl').innerText = `Lv. ${gameState.upgrades.speedLvl} (+${(gameState.upgrades.speedLvl-1)*15} km/h)`;
+            } else if (type === 'handling') {
+                gameState.upgrades.handlingLvl++;
+                document.getElementById('stat-handling-lvl').innerText = `Lv. ${gameState.upgrades.handlingLvl} (+${(gameState.upgrades.handlingLvl-1)*10}% Grip)`;
+            } else if (type === 'ers') {
+                gameState.upgrades.ersLvl++;
+                document.getElementById('stat-ers-lvl').innerText = `Lv. ${gameState.upgrades.ersLvl} (+${(gameState.upgrades.ersLvl-1)*20}% Batt)`;
+            }
+            updateUI();
+            showToast("✨ F1 머신 업그레이드 완료!");
+        }
+
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 z-50 glass-panel px-6 py-3 rounded-2xl text-xs font-bold text-red-400 border border-red-500 shadow-2xl animate-bounce';
+            toast.innerText = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+        }
+
+        function updateUI() {
+            document.getElementById('credits-display').innerText = `$ ${gameState.credits.toLocaleString()}`;
+            document.getElementById('header-trophies').innerText = `${gameState.trophyPoints} Pts`;
+            if (gameState.bestLap) {
+                document.getElementById('best-lap-display').innerText = formatTime(gameState.bestLap);
+            }
+        }
+
+        function startGrandPrix() {
+            initAudioEngine();
+            gameState.mode = 'race';
+            switchView('race');
+
+            const currentTrack = tracks[gameState.selectedTrackIndex];
+            document.getElementById('race-circuit-title').innerText = currentTrack.name;
+
+            initRaceCanvas();
+            resetPlayerAndAICars();
+
+            isRaceActive = true;
+            raceStartTime = performance.now();
+            playerCar.lapStartTime = performance.now();
+
+            // Keyboard listeners
+            window.onkeydown = (e) => keys[e.key] = true;
+            window.onkeyup = (e) => keys[e.key] = false;
+
+            // Touch Control Bindings
+            setupTouchControls();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function startPracticeMode() {
+        function toggleSteeringAssist() {
+            gameState.steeringAssist = !gameState.steeringAssist;
+            const btn = document.getElementById('assist-toggle-btn');
+            if (btn) {
+                btn.innerText = gameState.steeringAssist ? "ON (쉬움)" : "OFF (하드코어)";
+                btn.className = gameState.steeringAssist ? "px-2 py-0.5 rounded text-[10px] bg-emerald-600 text-white font-bold" : "px-2 py-0.5 rounded text-[10px] bg-slate-700 text-slate-300 font-bold";
+            }
+            showToast(gameState.steeringAssist ? "🎮 조작 보조 시스템 활성화 (쉬운 조종)" : "🏎️ 수동 조종 모드 전환");
+        }
+
+        function resetPlayerAndAICars() {
+            const currentTrack = tracks[gameState.selectedTrackIndex];
+            const startNode = currentTrack.waypoints[0];
+            const nextNode = currentTrack.waypoints[1];
+            const startAngle = Math.atan2(nextNode.y - startNode.y, nextNode.x - startNode.x);
+
+            // Calculate Max Speed with upgrades
+            const baseMaxSpeed = 290 + (gameState.upgrades.speedLvl - 1) * 12;
+
+            // Reset Player
+            playerCar.x = startNode.x;
+            playerCar.y = startNode.y;
+            playerCar.angle = startAngle;
+            playerCar.speed = 0;
+            playerCar.maxSpeed = baseMaxSpeed;
+            // Enhanced base handling responsiveness for smooth cornering
+            playerCar.handling = 0.068 + (gameState.upgrades.handlingLvl - 1) * 0.008;
+            playerCar.ersEnergy = 100;
+            playerCar.tireWear = 100;
+            playerCar.currentLap = 1;
+            playerCar.checkpointIndex = 0;
+            playerCar.lapTimes = [];
+            playerCar.totalDistance = 0;
+
+            // Spawn 9 AI Opponents on grid
+            aiCars = [];
+            for (let i = 0; i < 9; i++) {
+                const gridOffset = (i + 1) * 28;
+                const aiX = startNode.x - Math.cos(startAngle) * gridOffset + (i % 2 === 0 ? 15 : -15) * Math.sin(startAngle);
+                const aiY = startNode.y - Math.sin(startAngle) * gridOffset - (i % 2 === 0 ? 15 : -15) * Math.cos(startAngle);
+
+                aiCars.push({
+                    id: i,
+                    name: AI_NAMES[i],
+                    color: AI_COLORS[i],
+                    x: aiX,
+                    y: aiY,
+                    angle: startAngle,
+                    speed: 0,
+                    maxSpeed: baseMaxSpeed - 10 + Math.random() * 20,
+                    targetWaypointIndex: 1,
+                    currentLap: 1,
+                    totalDistance: -gridOffset
+                });
+            }
+        }
+
+        function initRaceCanvas() {
+            canvas = document.getElementById('race-canvas');
+            ctx = canvas.getContext('2d');
+            canvas.width = 1000;
+            canvas.height = 650;
+        }
+
+        function gameLoop(timestamp) {
+            if (!isRaceActive) return;
+
+            // CLEAR & RENDER TRACK
+            renderRaceScene();
+
+            // UPDATE PLAYER PHYSICS
+            updatePlayerCarPhysics();
+
+            // UPDATE AI CARS PHYSICS
+            updateAICarsPhysics();
+
+            // TELEMETRY & HUD UPDATE
+            updateTelemetryHUD(timestamp);
+
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        function renderRaceScene() {
+            const currentTrack = tracks[gameState.selectedTrackIndex];
+
+            // 1. Fill Grass Background
+            ctx.fillStyle = '#0f381e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 2. Draw Track Surface & Curbs
+            ctx.lineWidth = currentTrack.trackWidth;
+            ctx.strokeStyle = '#2b2d35'; // Asphalt
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            ctx.beginPath();
+            currentTrack.waypoints.forEach((wp, idx) => {
+                if (idx === 0) ctx.moveTo(wp.x, wp.y);
+                else ctx.lineTo(wp.x, wp.y);
+            });
+            ctx.closePath();
+            ctx.stroke();
+
+            // White Track Edges & Red/White Curbs
+            ctx.lineWidth = currentTrack.trackWidth + 8;
+            ctx.strokeStyle = '#ef4444';
+            ctx.stroke();
+            ctx.lineWidth = currentTrack.trackWidth;
+            ctx.strokeStyle = '#2b2d35';
+            ctx.stroke();
+
+            // 3. Start/Finish Line
+            const startWp = currentTrack.waypoints[0];
+            const nextWp = currentTrack.waypoints[1];
+            const angle = Math.atan2(nextWp.y - startWp.y, nextWp.x - startWp.x);
+
+            ctx.save();
+            ctx.translate(startWp.x, startWp.y);
+            ctx.rotate(angle + Math.PI/2);
+            ctx.fillStyle = '#ffffff';
+            for (let i = -currentTrack.trackWidth/2; i < currentTrack.trackWidth/2; i += 10) {
+                ctx.fillStyle = (i % 20 === 0) ? '#ffffff' : '#000000';
+                ctx.fillRect(i, -4, 10, 8);
+            }
+            ctx.restore();
+
+            // 4. Draw AI Cars
+            aiCars.forEach(ai => drawCar(ai.x, ai.y, ai.angle, ai.color, false));
+
+            // 5. Draw Player Car (Red Livery)
+            drawCar(playerCar.x, playerCar.y, playerCar.angle, '#ef4444', true);
+        }
+
+        function drawCar(x, y, angle, color, isPlayer) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+
+            // Car Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.4)';
+            ctx.fillRect(-14, -8, 28, 16);
+
+            // Front Wing
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(10, -9, 4, 18);
+
+            // Wheels (Front Left, Front Right, Rear Left, Rear Right)
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(4, -10, 6, 3);
+            ctx.fillRect(4, 7, 6, 3);
+            ctx.fillRect(-10, -10, 7, 3.5);
+            ctx.fillRect(-10, 6.5, 7, 3.5);
+
+            // Main Body Chassis
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(12, 0);
+            ctx.lineTo(-10, -6);
+            ctx.lineTo(-12, 6);
+            ctx.closePath();
+            ctx.fill();
+
+            // Cockpit
+            ctx.fillStyle = '#020617';
+            ctx.beginPath();
+            ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Player Halo Indicator
+            if (isPlayer) {
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(0, 0, 7, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        function updatePlayerCarPhysics() {
+            // Acceleration & Braking inputs
+            let accel = 0;
+            if (keys['ArrowUp'] || keys['w']) accel = playerCar.acceleration;
+            if (keys['ArrowDown'] || keys['s']) accel = -playerCar.acceleration * 1.6;
+
+            // ERS Boost (Spacebar)
+            playerCar.isERSActive = false;
+            let currentTopSpeed = playerCar.maxSpeed;
+            if (keys[' '] && playerCar.ersEnergy > 0) {
+                playerCar.isERSActive = true;
+                accel += 0.28;
+                currentTopSpeed += 35;
+                playerCar.ersEnergy = Math.max(0, playerCar.ersEnergy - 0.4);
+            } else if (playerCar.ersEnergy < 100) {
+                playerCar.ersEnergy = Math.min(100, playerCar.ersEnergy + 0.1);
+            }
+
+            // Tire Wear Grip Drop Limit (Prevents car from becoming unsteerable)
+            const gripFactor = playerCar.tireWear / 100;
+            const effectiveHandling = playerCar.handling * (0.85 + gripFactor * 0.15);
+
+            // Dynamic Turn Rate: Allows responsive low-speed turning & stable high-speed cornering
+            const speedFactor = gameState.steeringAssist 
+                ? Math.max(0.45, Math.min(1.15, playerCar.speed / 100))
+                : (playerCar.speed / 150);
+            
+            const turnRate = effectiveHandling * speedFactor;
+
+            // Steering inputs with enhanced responsiveness
+            if (keys['ArrowLeft'] || keys['a']) {
+                playerCar.angle -= turnRate;
+                if (playerCar.speed > 180 && !gameState.steeringAssist) playSoundEffect('squeal');
+            }
+            if (keys['ArrowRight'] || keys['d']) {
+                playerCar.angle += turnRate;
+                if (playerCar.speed > 180 && !gameState.steeringAssist) playSoundEffect('squeal');
+            }
+
+            // Speed Update (convert to simulated km/h)
+            playerCar.speed += accel * 14;
+            if (accel === 0) playerCar.speed *= 0.988; // Natural air drag
+
+            // Cap Speed
+            playerCar.speed = Math.max(0, Math.min(currentTopSpeed, playerCar.speed));
+
+            // Tire Wear Consumption
+            if (playerCar.speed > 50) {
+                playerCar.tireWear = Math.max(10, playerCar.tireWear - 0.012);
+            }
+
+            // Move Coordinates
+            const moveDist = (playerCar.speed / 3.6) * 0.05;
+            playerCar.x += Math.cos(playerCar.angle) * moveDist;
+            playerCar.y += Math.sin(playerCar.angle) * moveDist;
+
+            // Keep within Canvas Bounds & Off-track grass penalty (Smoother off-track recovery)
+            const currentTrack = tracks[gameState.selectedTrackIndex];
+            const distFromTrack = getDistanceFromTrack(playerCar.x, playerCar.y, currentTrack);
+            if (distFromTrack > currentTrack.trackWidth / 2) {
+                // Forgiving off-track slowdown
+                playerCar.speed *= gameState.steeringAssist ? 0.96 : 0.92;
+            }
+
+            // Checkpoint & Lap Progress Logic
+            checkLapProgress(playerCar, currentTrack);
+
+            // RPM & Gear Simulation
+            playerCar.gear = Math.min(8, Math.max(1, Math.floor(playerCar.speed / 38) + 1));
+            playerCar.rpm = 2000 + ((playerCar.speed % 38) / 38) * 11000;
+
+            updateEngineSound(playerCar.rpm, playerCar.gear);
+        }
+
+        function updateAICarsPhysics() {
+            const currentTrack = tracks[gameState.selectedTrackIndex];
+
+            aiCars.forEach(ai => {
+                const targetWp = currentTrack.waypoints[ai.targetWaypointIndex];
+                const dx = targetWp.x - ai.x;
+                const dy = targetWp.y - ai.y;
+                const targetAngle = Math.atan2(dy, dx);
+
+                // Smooth steering towards waypoint
+                let angleDiff = targetAngle - ai.angle;
+                while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+                while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+
+                ai.angle += Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), 0.05);
+
+                // AI Speed Control
+                ai.speed = Math.min(ai.maxSpeed, ai.speed + 1.2);
+                const moveDist = (ai.speed / 3.6) * 0.05;
+                ai.x += Math.cos(ai.angle) * moveDist;
+                ai.y += Math.sin(ai.angle) * moveDist;
+
+                // Advance AI Waypoint
+                if (Math.hypot(dx, dy) < 45) {
+                    ai.targetWaypointIndex = (ai.targetWaypointIndex + 1) % currentTrack.waypoints.length;
+                    if (ai.targetWaypointIndex === 1) {
+                        ai.currentLap++;
+                    }
+                }
+
+                ai.totalDistance = ai.currentLap * 1000 + ai.targetWaypointIndex * 100;
+            });
+
+            // Calculate Player Distance for Race Position Rank
+            playerCar.totalDistance = playerCar.currentLap * 1000 + playerCar.checkpointIndex * 100;
+        }
+
+        function getDistanceFromTrack(x, y, track) {
+            let minDist = Infinity;
+            for (let i = 0; i < track.waypoints.length; i++) {
+                const wp = track.waypoints[i];
+                const dist = Math.hypot(x - wp.x, y - wp.y);
+                if (dist < minDist) minDist = dist;
+            }
+            return minDist;
+        }
+
+        function checkLapProgress(car, track) {
+            const nextWpIndex = (car.checkpointIndex + 1) % track.waypoints.length;
+            const nextWp = track.waypoints[nextWpIndex];
+
+            if (Math.hypot(car.x - nextWp.x, car.y - nextWp.y) < track.trackWidth) {
+                car.checkpointIndex = nextWpIndex;
+                if (nextWpIndex === 0) {
+                    // Completed a Lap!
+                    const now = performance.now();
+                    const lapTime = now - car.lapStartTime;
+                    car.lapTimes.push(lapTime);
+                    car.lapStartTime = now;
+
+                    if (!gameState.bestLap || lapTime < gameState.bestLap) {
+                        gameState.bestLap = lapTime;
+                    }
+
+                    document.getElementById('last-lap-timer').innerText = formatTime(lapTime);
+
+                    car.currentLap++;
+                    if (car.currentLap > track.laps) {
+                        finishGrandPrixRace();
+                    }
+                }
+            }
+        }
+
+        function updateTelemetryHUD(timestamp) {
+            // 1. Speedometer & Gear
+            document.getElementById('speed-display').innerText = Math.round(playerCar.speed);
+            document.getElementById('gear-display').innerText = playerCar.speed < 5 ? "N" : playerCar.gear;
+            document.getElementById('rpm-display').innerText = Math.round(playerCar.rpm).toLocaleString();
+
+            // 2. Shift Lights Array
+            const shiftLights = document.querySelectorAll('#shift-lights-container .shift-light');
+            const activeCount = Math.floor((playerCar.rpm / 13000) * shiftLights.length);
+            shiftLights.forEach((light, i) => {
+                if (i < activeCount) {
+                    light.className = i < 5 ? 'shift-light active-green' : (i < 7 ? 'shift-light active-red' : 'shift-light active-blue');
+                } else {
+                    light.className = 'shift-light';
+                }
+            });
+
+            // 3. ERS Boost Bar
+            document.getElementById('ers-bar').style.width = `${playerCar.ersEnergy}%`;
+            document.getElementById('ers-percent-text').innerText = `${Math.round(playerCar.ersEnergy)}%`;
+
+            // 4. Tire Wear Bar
+            document.getElementById('tire-wear-bar').style.width = `${playerCar.tireWear}%`;
+            document.getElementById('tire-wear-percent').innerText = `${Math.round(playerCar.tireWear)}%`;
+
+            // 5. Lap Counters & Timers
+            const currentTrack = tracks[gameState.selectedTrackIndex];
+            document.getElementById('lap-counter-text').innerHTML = `${Math.min(carMaxLap(), playerCar.currentLap)} <span class="text-xs text-slate-500">/ ${currentTrack.laps}</span>`;
+            
+            const elapsedLap = performance.now() - playerCar.lapStartTime;
+            document.getElementById('current-lap-timer').innerText = formatTime(elapsedLap);
+
+            // 6. Calculate Rank Position (P1 to P10)
+            const allDrivers = [playerCar, ...aiCars];
+            allDrivers.sort((a, b) => b.totalDistance - a.totalDistance);
+            const playerRank = allDrivers.indexOf(playerCar) + 1;
+            document.getElementById('race-pos-badge').innerText = `P ${playerRank} / 10`;
+        }
+
+        function carMaxLap() {
+            return tracks[gameState.selectedTrackIndex].laps;
+        }
+
+        function formatTime(ms) {
+            if (!ms) return "--:--.---";
+            const mins = Math.floor(ms / 60000);
+            const secs = Math.floor((ms % 60000) / 1000);
+            const millis = Math.floor(ms % 1000);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${millis.toString().padStart(3, '0')}`;
+        }
+
+        function requestPitStop() {
+            document.getElementById('pitstop-modal').classList.remove('hidden');
+        }
+
+        function executePitStop(compound) {
+            playerCar.tireCompound = compound;
+            playerCar.tireWear = 100;
+            document.getElementById('tire-compound-text').innerText = `${compound} (${compound[0]})`;
+            document.getElementById('pitstop-modal').classList.add('hidden');
+            showToast(`🔧 피트스톱 완료! ${compound} 타이어 장착`);
+        }
+
+        function finishGrandPrixRace() {
+            isRaceActive = false;
+            cancelAnimationFrame(animationFrameId);
+            playSoundEffect('cheer');
+
+            // Determine Position
+            const allDrivers = [playerCar, ...aiCars];
+            allDrivers.sort((a, b) => b.totalDistance - a.totalDistance);
+            const pos = allDrivers.indexOf(playerCar) + 1;
+
+            const prizeMoney = Math.max(10000, (11 - pos) * 15000);
+            const pointsGained = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1][pos - 1] || 0;
+
+            gameState.credits += prizeMoney;
+            gameState.trophyPoints += pointsGained;
+
+            const bestLapTime = playerCar.lapTimes.length > 0 ? Math.min(...playerCar.lapTimes) : 0;
+
+            document.getElementById('res-pos').innerText = `P${pos} / 10`;
+            document.getElementById('res-best-lap').innerText = formatTime(bestLapTime);
+            document.getElementById('res-prize').innerText = `$ ${prizeMoney.toLocaleString()}`;
+            document.getElementById('res-points').innerText = `+${pointsGained} Pts`;
+
+            document.getElementById('result-modal').classList.remove('hidden');
+            updateUI();
+        }
+
+        function closeResultModal() {
+            document.getElementById('result-modal').classList.add('hidden');
+            switchView('garage');
+        }
+
+        function confirmExitRace() {
+            isRaceActive = false;
+            cancelAnimationFrame(animationFrameId);
+            switchView('garage');
+        }
+
+        function setupTouchControls() {
+            const btnLeft = document.getElementById('btn-touch-left');
+            const btnRight = document.getElementById('btn-touch-right');
+            const btnAccel = document.getElementById('btn-touch-accel');
+            const btnBrake = document.getElementById('btn-touch-brake');
+
+            if (!btnLeft) return;
+
+            btnLeft.ontouchstart = () => keys['ArrowLeft'] = true;
+            btnLeft.ontouchend = () => keys['ArrowLeft'] = false;
+
+            btnRight.ontouchstart = () => keys['ArrowRight'] = true;
+            btnRight.ontouchend = () => keys['ArrowRight'] = false;
+
+            btnAccel.ontouchstart = () => keys['ArrowUp'] = true;
+            btnAccel.ontouchend = () => keys['ArrowUp'] = false;
+
+            btnBrake.ontouchstart = () => keys['ArrowDown'] = true;
+            btnBrake.ontouchend = () => keys['ArrowDown'] = false;
+        }
+
+        // INITIAL ONLOAD
+        window.onload = function() {
+            updateUI();
+        };
+    </script>
+</body>
+</html>
